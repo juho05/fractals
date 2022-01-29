@@ -21,7 +21,7 @@ const windowWidth = 800
 const windowHeight = 800
 const chunkWidth = 80
 const chunkHeight = 80
-const maxIterations = 1000
+const maxIterations = 500
 
 var colors = []color.RGBA{
 	rl.NewColor(66, 30, 15, 255),
@@ -72,7 +72,9 @@ func main() {
 	rl.InitWindow(int32(windowWidth), int32(windowHeight), "Fractals")
 
 	channel := make(chan Chunk, (windowWidth/chunkWidth)*(windowHeight/chunkHeight))
-	generateMandelbrot(channel, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+
+	// generateMandelbrot(channel, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+	generateJulia(-0.1+0.65i, channel, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
 
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()

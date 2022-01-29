@@ -7,6 +7,9 @@ An application written in Go to generate fractals like the [Mandelbrot set](http
 ### Mandelbrot set
 ![](images/mandelbrot.png "Mandelbrot set")
 
+### Julia set
+![](images/julia.png "Julia set")
+
 ## License
 
 This program is free software: you can redistribute it and/or modify
