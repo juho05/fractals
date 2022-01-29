@@ -1,6 +1,11 @@
-# fractals
+# Fractals
 
 An application written in Go to generate fractals like the [Mandelbrot set](https://en.wikipedia.org/wiki/Mandelbrot_set) and the [Julia set](https://en.wikipedia.org/wiki/Julia_set).
+
+## Screenshots
+
+### Mandelbrot set
+![](images/mandelbrot.png "Mandelbrot set")
 
 ## License
 
