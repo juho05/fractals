@@ -2,26 +2,29 @@ package main
 
 import (
 	"image/color"
+	"sync"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-type Point struct {
-	X          int
-	Y          int
-	Iterations int64
-}
-
-type Chunk struct {
-	Index  int
-	Points []Point
+type Camera struct {
+	Zoom    float64
+	offsetX float64
+	offsetY float64
 }
 
 const windowWidth = 800
 const windowHeight = 800
 const chunkWidth = 80
 const chunkHeight = 80
-const maxIterations = 500
+const maxIterations = 300
+const zoomSpeed = 0.05
+
+var camera = Camera{
+	Zoom:    1.0,
+	offsetX: 0.0,
+	offsetY: 0.0,
+}
 
 var colors = []color.RGBA{
 	rl.NewColor(66, 30, 15, 255),
@@ -41,7 +44,8 @@ var colors = []color.RGBA{
 	rl.NewColor(106, 52, 3, 255),
 }
 
-var chunks = make([]Chunk, (windowWidth/chunkWidth)*(windowHeight/chunkHeight))
+var points = make([]Point, windowWidth*windowHeight)
+var pointsLock = sync.RWMutex{}
 
 func colorFromIterations(iterations int64) color.RGBA {
 	if iterations == maxIterations {
@@ -50,41 +54,63 @@ func colorFromIterations(iterations int64) color.RGBA {
 	return colors[iterations%int64(len(colors))]
 }
 
-func drawChunk(chunk Chunk) {
-	for _, p := range chunk.Points {
-		rl.DrawPixel(int32(p.X), int32(p.Y), colorFromIterations(p.Iterations))
+func processInput() {
+	changed := false
+
+	wheelMove := float64(rl.GetMouseWheelMove())
+	if wheelMove != 0 {
+		// TODO: Zoom to cursor
+		camera.Zoom -= wheelMove * zoomSpeed * camera.Zoom
+		changed = true
+	}
+
+	if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
+		mouseMove := rl.GetMouseDelta()
+		if mouseMove.X != 0 || mouseMove.Y != 0 {
+			camera.offsetX -= float64(mouseMove.X) * camera.Zoom / 500
+			camera.offsetY -= float64(mouseMove.Y) * camera.Zoom / 500
+			changed = true
+		}
+	}
+
+	if changed {
+		go generate()
 	}
 }
 
-func receiveChunks(channel <-chan Chunk) {
-	for {
-		select {
-		case chunk := <-channel:
-			chunks[chunk.Index] = chunk
-		default:
-			return
-		}
-	}
+func generate() {
+	// TODO: cancel all previous calculations
+
+	temp := generateMandelbrot(camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+	// temp := generateJulia(-0.1+0.65i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+	// temp := generateJulia(-0.79+0.125i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+	// temp := generateJulia(-1.45+0i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+	// temp := generateJulia(-1.37969+0i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+	// temp := generateJulia(-0.562292+0.642817i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+
+	pointsLock.Lock()
+	points = temp
+	pointsLock.Unlock()
 }
 
 func main() {
 	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.InitWindow(int32(windowWidth), int32(windowHeight), "Fractals")
 
-	channel := make(chan Chunk, (windowWidth/chunkWidth)*(windowHeight/chunkHeight))
-
-	// generateMandelbrot(channel, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-	generateJulia(-0.1+0.65i, channel, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+	go generate()
 
 	for !rl.WindowShouldClose() {
+		processInput()
+
 		rl.BeginDrawing()
 
 		rl.ClearBackground(rl.Black)
 
-		receiveChunks(channel)
-		for _, chunk := range chunks {
-			drawChunk(chunk)
+		pointsLock.RLock()
+		for _, p := range points {
+			rl.DrawPixel(int32(p.X), int32(p.Y), colorFromIterations(p.Iterations))
 		}
+		pointsLock.RUnlock()
 
 		rl.EndDrawing()
 	}
