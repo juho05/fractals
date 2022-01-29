@@ -15,8 +15,8 @@ type Camera struct {
 
 const windowWidth = 800
 const windowHeight = 800
-const chunkWidth = 80
-const chunkHeight = 80
+const chunkWidth = 100
+const chunkHeight = 100
 const maxIterations = 300
 const zoomSpeed = 0.05
 
@@ -25,6 +25,10 @@ var camera = Camera{
 	offsetX: 0.0,
 	offsetY: 0.0,
 }
+var cameraMutex = sync.RWMutex{}
+var regenerateChan = make(chan bool, 1)
+
+var running = true
 
 var colors = []color.RGBA{
 	rl.NewColor(66, 30, 15, 255),
@@ -57,6 +61,8 @@ func colorFromIterations(iterations int64) color.RGBA {
 func processInput() {
 	changed := false
 
+	cameraMutex.Lock()
+
 	wheelMove := float64(rl.GetMouseWheelMove())
 	if wheelMove != 0 {
 		// TODO: Zoom to cursor
@@ -67,37 +73,50 @@ func processInput() {
 	if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
 		mouseMove := rl.GetMouseDelta()
 		if mouseMove.X != 0 || mouseMove.Y != 0 {
-			camera.offsetX -= float64(mouseMove.X) * camera.Zoom / 500
-			camera.offsetY -= float64(mouseMove.Y) * camera.Zoom / 500
+			camera.offsetX -= float64(mouseMove.X) * camera.Zoom / (windowWidth / 4)
+			camera.offsetY -= float64(mouseMove.Y) * camera.Zoom / (windowHeight / 4)
 			changed = true
 		}
 	}
 
+	cameraMutex.Unlock()
+
 	if changed {
-		go generate()
+		select {
+		case regenerateChan <- true:
+			return
+		default:
+			return
+		}
 	}
 }
 
-func generate() {
-	// TODO: cancel all previous calculations
+func generateLoop() {
+	for running {
+		cameraMutex.RLock()
+		cam := camera
+		cameraMutex.RUnlock()
 
-	temp := generateMandelbrot(camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-	// temp := generateJulia(-0.1+0.65i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-	// temp := generateJulia(-0.79+0.125i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-	// temp := generateJulia(-1.45+0i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-	// temp := generateJulia(-1.37969+0i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-	// temp := generateJulia(-0.562292+0.642817i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+		temp := generateMandelbrot(cam, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+		// temp := generateJulia(-0.1+0.65i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+		// temp := generateJulia(-0.79+0.125i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+		// temp := generateJulia(-1.45+0i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+		// temp := generateJulia(-1.37969+0i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+		// temp := generateJulia(-0.562292+0.642817i, camera, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
 
-	pointsLock.Lock()
-	points = temp
-	pointsLock.Unlock()
+		pointsLock.Lock()
+		points = temp
+		pointsLock.Unlock()
+
+		<-regenerateChan
+	}
 }
 
 func main() {
 	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.InitWindow(int32(windowWidth), int32(windowHeight), "Fractals")
 
-	go generate()
+	go generateLoop()
 
 	for !rl.WindowShouldClose() {
 		processInput()
@@ -116,4 +135,12 @@ func main() {
 	}
 
 	rl.CloseWindow()
+
+	running = false
+	select {
+	case regenerateChan <- true:
+		break
+	default:
+		break
+	}
 }
