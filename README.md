@@ -6,9 +6,11 @@ An application written in Go to generate fractals like the [Mandelbrot set](http
 
 ### Mandelbrot set
 ![](images/mandelbrot.png "Mandelbrot set")
+![](images/mandelbrot2.png "Mandelbrot set")
 
 ### Julia set
 ![](images/julia.png "Julia set")
+![](images/julia2.png "Julia set")
 
 ## License
 
