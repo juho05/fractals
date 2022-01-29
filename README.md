@@ -12,6 +12,22 @@ An application written in Go to generate fractals like the [Mandelbrot set](http
 ![](images/julia.png "Julia set")
 ![](images/julia2.png "Julia set")
 
+## Prerequisites
+
+- [Go 1.17+](https://go.dev/)
+- C compiler
+  - Windows: [Mingw-w64](https://mingw-w64.org/) or [TDM-GCC](http://tdm-gcc.tdragon.net/)
+  - macOS: Xcode or Command Line Tools for Xcode
+  - Linux: [gcc](https://gcc.gnu.org/) or [clang](https://clang.llvm.org/)
+
+## Building/Running
+
+```sh
+git clone https://github.com/Bananenpro/fractals.git
+cd fractals
+go run .
+```
+
 ## License
 
 This program is free software: you can redistribute it and/or modify
