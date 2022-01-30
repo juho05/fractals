@@ -52,8 +52,11 @@ func processInput() {
 
 	wheelMove := float64(rl.GetMouseWheelMove())
 	if wheelMove != 0 {
-		// TODO: Zoom to cursor
+		camera.offsetX -= float64(windowWidth / 2 - rl.GetMouseX()) * camera.Zoom / (windowWidth / 4)
+		camera.offsetY -= float64(windowHeight / 2 - rl.GetMouseY()) * camera.Zoom / (windowHeight / 4)
 		camera.Zoom -= wheelMove * zoomSpeed * camera.Zoom
+		camera.offsetX += float64(windowWidth / 2 - rl.GetMouseX()) * camera.Zoom / (windowWidth / 4)
+		camera.offsetY += float64(windowHeight / 2 - rl.GetMouseY()) * camera.Zoom / (windowHeight / 4)
 		changed = true
 	}
 
