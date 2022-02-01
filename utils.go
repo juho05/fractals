@@ -6,7 +6,4 @@ type Point struct {
 	Iterations int64
 }
 
-type Chunk struct {
-	Index  int
-	Points []Point
-}
+type Chunk []Point

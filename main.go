@@ -15,8 +15,6 @@ type Camera struct {
 
 const windowWidth = 800
 const windowHeight = 800
-const chunkWidth = 100
-const chunkHeight = 100
 const maxIterations = 500
 const zoomSpeed = 0.05
 
@@ -87,12 +85,12 @@ func generateLoop() {
 		cam := camera
 		cameraMutex.RUnlock()
 
-		temp := generateMandelbrot(cam, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-		// temp := generateJulia(-0.1+0.65i, cam, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-		// temp := generateJulia(-0.79+0.125i, cam, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-		// temp := generateJulia(-1.45+0i, cam, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-		// temp := generateJulia(-1.37969+0i, cam, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
-		// temp := generateJulia(-0.562292+0.642817i, cam, int(windowWidth), int(windowHeight), chunkWidth, chunkHeight, maxIterations)
+		temp := generateMandelbrot(cam, int(windowWidth), int(windowHeight), maxIterations)
+		// temp := generateJulia(-0.1+0.65i, cam, int(windowWidth), int(windowHeight), maxIterations)
+		// temp := generateJulia(-0.79+0.125i, cam, int(windowWidth), int(windowHeight), maxIterations)
+		// temp := generateJulia(-1.45+0i, cam, int(windowWidth), int(windowHeight), maxIterations)
+		// temp := generateJulia(-1.37969+0i, cam, int(windowWidth), int(windowHeight), maxIterations)
+		// temp := generateJulia(-0.562292+0.642817i, cam, int(windowWidth), int(windowHeight), maxIterations)
 
 		pointsLock.Lock()
 		points = temp

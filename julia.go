@@ -2,38 +2,25 @@ package main
 
 import "math/cmplx"
 
-func generateJulia(c complex128, camera Camera, width, height, chunkWidth, chunkHeight int, maxIterations int64) []Point {
-	channel := make(chan Chunk, (windowWidth/chunkWidth)*(windowHeight/chunkHeight))
-	index := 0
-	for x := 0; x < width; x += chunkWidth {
-		for y := 0; y < height; y += chunkHeight {
-			toX := x + chunkWidth
-			if toX >= width {
-				toX = width
-			}
-			toY := y + chunkHeight
-			if toY >= height {
-				toY = height
-			}
-
-			go generateJuliaChunk(index, c, camera, x, y, toX, toY, width, height, channel, maxIterations)
-			index++
-		}
+func generateJulia(c complex128, camera Camera, width, height int, maxIterations int64) []Point {
+	channel := make(chan Chunk, height)
+	for y := 0; y < height; y ++ {
+		go generateJuliaChunk(c, camera, 0, y, width, y+1, width, height, channel, maxIterations)
 	}
 
 	points := make([]Point, 0, windowWidth*windowHeight)
 
-	for i := 0; i < (windowWidth/chunkWidth)*(windowHeight/chunkHeight); i++ {
+	for i := 0; i < height; i++ {
 		chunk := <-channel
-		points = append(points, chunk.Points...)
+		points = append(points, chunk...)
 	}
 
 	return points
 }
 
 // generate a chunk of the julia set from (fromX, fromY) (inclusive) to (toX, toY) (exclusive) and send the result through channel
-func generateJuliaChunk(index int, c complex128, camera Camera, fromX, fromY, toX, toY, width, height int, channel chan<- Chunk, maxIterations int64) {
-	points := make([]Point, 0, (toX-fromX)*(toY-fromY))
+func generateJuliaChunk(c complex128, camera Camera, fromX, fromY, toX, toY, width, height int, channel chan<- Chunk, maxIterations int64) {
+	points := make(Chunk, 0, (toX-fromX)*(toY-fromY))
 	for x := fromX; x < toX; x++ {
 		for y := fromY; y < toY; y++ {
 			points = append(points, Point{
@@ -44,10 +31,7 @@ func generateJuliaChunk(index int, c complex128, camera Camera, fromX, fromY, to
 		}
 	}
 
-	channel <- Chunk{
-		Index:  index,
-		Points: points,
-	}
+	channel <- points
 }
 
 func calculateJuliaPoint(c complex128, camera Camera, winX, winY, winWidth, winHeight int, maxIterations int64) int64 {
