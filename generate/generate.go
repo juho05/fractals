@@ -13,12 +13,16 @@ type calculatePixelFunc func(camera Camera, x, y int) int
 
 type callbackFunc func(points []fractals.Point, camera Camera, maxIterations int, time int64)
 
+const increaseIterationsThreshold = 0.93
+const maxIterationsStep = 50
+
 type Generator struct {
 	camera         Camera
 	previousCamera Camera
 	width          int
 	height         int
 	maxIterations  int
+
 	calculatePixel calculatePixelFunc
 
 	points []fractals.Point
@@ -51,7 +55,9 @@ func (g *Generator) Start(loop bool) {
 	g.running = true
 	go func() {
 		for loop && g.running {
-			go g.generate()
+			g.generate()
+			g.updateMaxIterations()
+
 			if !<-g.regenerateChan {
 				return
 			}
@@ -77,6 +83,36 @@ func (g *Generator) AddCallback(callback callbackFunc) uuid.UUID {
 
 func (g *Generator) RemoveCallback(id uuid.UUID) {
 	delete(g.callbacks, id)
+}
+
+func (g *Generator) updateMaxIterations() {
+	previous := g.maxIterations
+
+	pixelsAboveIncreaseIterationsThreshold := 0
+	for _, p := range g.points {
+		if float64(p.Iterations) > float64(g.maxIterations)*increaseIterationsThreshold && p.Iterations < g.maxIterations {
+			pixelsAboveIncreaseIterationsThreshold++
+		}
+	}
+
+	if pixelsAboveIncreaseIterationsThreshold > 1500 {
+		g.maxIterations += int(maxIterationsStep * (float64(pixelsAboveIncreaseIterationsThreshold) / 700))
+	} else if pixelsAboveIncreaseIterationsThreshold < 1000 {
+		g.maxIterations -= int(maxIterationsStep * (1000 / float64(pixelsAboveIncreaseIterationsThreshold)))
+	}
+
+	if g.maxIterations < 100 {
+		g.maxIterations = 100
+	}
+
+	if g.maxIterations != previous {
+		select {
+		case g.regenerateChan <- true:
+			return
+		default:
+			return
+		}
+	}
 }
 
 func (g *Generator) generate() {
