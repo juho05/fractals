@@ -31,7 +31,7 @@ func processInput() {
 		generator.Zoom(wheelMove*zoomSpeed, int(rl.GetMouseX()), int(rl.GetMouseY()))
 	}
 
-	if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
+	if rl.IsMouseButtonDown(rl.MouseLeftButton) {
 		mouseMove := rl.GetMouseDelta()
 		generator.Move(int(mouseMove.X), int(mouseMove.Y))
 	}
