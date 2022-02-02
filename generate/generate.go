@@ -1,6 +1,8 @@
 package generate
 
 import (
+	"time"
+
 	"github.com/Bananenpro/fractals"
 	"github.com/google/uuid"
 )
@@ -9,7 +11,7 @@ type chunk []fractals.Point
 
 type calculatePixelFunc func(camera Camera, x, y int) int
 
-type callbackFunc func(points []fractals.Point, camera Camera, maxIterations int)
+type callbackFunc func(points []fractals.Point, camera Camera, maxIterations int, time int64)
 
 type Generator struct {
 	camera         Camera
@@ -32,10 +34,10 @@ type Generator struct {
 func newGenerator(width, height int) *Generator {
 	return &Generator{
 		camera: Camera{
-			Zoom: 1,
+			Scale: 1,
 		},
 		previousCamera: Camera{
-			Zoom: 1,
+			Scale: 1,
 		},
 		width:          width,
 		height:         height,
@@ -78,6 +80,7 @@ func (g *Generator) RemoveCallback(id uuid.UUID) {
 }
 
 func (g *Generator) generate() {
+	startTime := time.Now()
 	channel := make(chan chunk, g.height)
 
 	camera := g.camera
@@ -94,8 +97,11 @@ func (g *Generator) generate() {
 	}
 
 	g.points = points
+
+	deltaTime := time.Since(startTime).Milliseconds()
+
 	for _, cb := range g.callbacks {
-		cb(points, g.camera, g.maxIterations)
+		cb(points, g.camera, g.maxIterations, deltaTime)
 	}
 }
 
@@ -115,5 +121,5 @@ func (g *Generator) generateChunk(camera Camera, fromX, fromY, toX, toY int, cha
 }
 
 func (g *Generator) complexNumberFromPixel(camera Camera, x, y int) complex128 {
-	return complex(camera.OffsetX+(float64(x)/float64(g.width)-0.5)*camera.Zoom*4, camera.OffsetY+(float64(y)/float64(g.height)-0.5)*camera.Zoom*4)
+	return complex(camera.OffsetX+(float64(x)/float64(g.width)-0.5)*camera.Scale*4, camera.OffsetY+(float64(y)/float64(g.height)-0.5)*camera.Scale*4)
 }

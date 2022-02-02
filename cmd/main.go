@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/Bananenpro/fractals"
@@ -19,6 +20,7 @@ var pointsLock = sync.RWMutex{}
 
 var camera generate.Camera
 var maxIterations int
+var deltaTime int64
 
 func processInput() {
 	generator.BeginMovement()
@@ -33,20 +35,23 @@ func processInput() {
 	}
 }
 
-func generatorCallback(pointsData []fractals.Point, usedCamera generate.Camera, usedMaxIterations int) {
+func generatorCallback(pointsData []fractals.Point, usedCamera generate.Camera, usedMaxIterations int, time int64) {
 	pointsLock.Lock()
 	points = pointsData
 	pointsLock.Unlock()
 
 	camera = usedCamera
 	maxIterations = usedMaxIterations
+	deltaTime = time
 }
 
 func main() {
 	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.InitWindow(int32(windowWidth), int32(windowHeight), "Fractals")
 
-	generator = generate.NewJuliaGenerator(-0.1+0.65i, windowWidth, windowHeight)
+	font := rl.LoadFontEx("assets/fonts/Roboto/Roboto-Regular.ttf", 16, nil, 0)
+
+	generator = generate.NewMandelbrotGenerator(windowWidth, windowHeight)
 	generator.AddCallback(generatorCallback)
 
 	generator.Start(true)
@@ -63,6 +68,9 @@ func main() {
 			rl.DrawPixel(int32(p.X), int32(p.Y), fractals.BernsteinPolynomials(p.Iterations, maxIterations))
 		}
 		pointsLock.RUnlock()
+
+		rl.DrawTextEx(font, fmt.Sprintf("NMAX: %d\tTIME: %dms", maxIterations, deltaTime), rl.Vector2{X: 5, Y: 5}, 16, 0, rl.White)
+		rl.DrawTextEx(font, fmt.Sprintf("SCALE: %g\tOFFSET-X: %g\tOFFSET-Y: %g", camera.Scale, camera.OffsetX, camera.OffsetY), rl.Vector2{X: 5, Y: windowHeight - 18}, 16, 0, rl.White)
 
 		rl.EndDrawing()
 	}
