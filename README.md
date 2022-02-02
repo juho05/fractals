@@ -25,7 +25,7 @@ An application written in Go to generate fractals like the [Mandelbrot set](http
 ```sh
 git clone https://github.com/Bananenpro/fractals.git
 cd fractals
-go run .
+go run ./cmd
 ```
 
 ## License

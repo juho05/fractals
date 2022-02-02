@@ -1,9 +1,7 @@
-package main
+package fractals
 
 type Point struct {
 	X          int
 	Y          int
-	Iterations int64
+	Iterations int
 }
-
-type Chunk []Point
