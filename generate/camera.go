@@ -11,7 +11,9 @@ func (g *Generator) BeginMovement() {
 }
 
 func (g *Generator) EndMovement() {
-	g.regenerateChan <- true
+	if g.camera != g.previousCamera {
+		g.regenerateChan <- true
+	}
 }
 
 func (g *Generator) Zoom(delta float64, pixelCenterX, pixelCenterY int) {
