@@ -27,7 +27,9 @@ func processInput() {
 	defer generator.EndMovement()
 
 	wheelMove := float64(rl.GetMouseWheelMove())
-	generator.Zoom(wheelMove*zoomSpeed, int(rl.GetMouseX()), int(rl.GetMouseY()))
+	if wheelMove != 0 {
+		generator.Zoom(wheelMove*zoomSpeed, int(rl.GetMouseX()), int(rl.GetMouseY()))
+	}
 
 	if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
 		mouseMove := rl.GetMouseDelta()
@@ -69,7 +71,10 @@ func main() {
 		}
 		pointsLock.RUnlock()
 
+		rl.DrawRectangle(0, 0, windowWidth, 25, rl.NewColor(0, 0, 0, 100))
 		rl.DrawTextEx(font, fmt.Sprintf("NMAX: %d\tTIME: %dms", maxIterations, deltaTime), rl.Vector2{X: 5, Y: 5}, 16, 0, rl.White)
+
+		rl.DrawRectangle(0, windowHeight - 25, windowWidth, 25, rl.NewColor(0, 0, 0, 100))
 		rl.DrawTextEx(font, fmt.Sprintf("SCALE: %g\tOFFSET-X: %g\tOFFSET-Y: %g", camera.Scale, camera.OffsetX, camera.OffsetY), rl.Vector2{X: 5, Y: windowHeight - 18}, 16, 0, rl.White)
 
 		rl.EndDrawing()
