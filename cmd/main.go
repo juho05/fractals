@@ -11,7 +11,7 @@ import (
 
 const windowWidth = 800
 const windowHeight = 800
-const zoomSpeed = 0.05
+const zoomSpeed = 0.08
 
 var generator *generate.Generator
 
