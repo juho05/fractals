@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/Bananenpro/fractals"
@@ -51,7 +50,7 @@ func main() {
 	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.InitWindow(int32(windowWidth), int32(windowHeight), "Fractals")
 
-	font := rl.LoadFontEx("assets/fonts/Roboto/Roboto-Regular.ttf", 16, nil, 0)
+	loadAssets()
 
 	generator = generate.NewMandelbrotGenerator(windowWidth, windowHeight)
 	generator.AddCallback(generatorCallback)
@@ -71,11 +70,7 @@ func main() {
 		}
 		pointsLock.RUnlock()
 
-		rl.DrawRectangle(0, 0, windowWidth, 25, rl.NewColor(0, 0, 0, 100))
-		rl.DrawTextEx(font, fmt.Sprintf("NMAX: %d\tTIME: %dms", maxIterations, deltaTime), rl.Vector2{X: 5, Y: 5}, 16, 0, rl.White)
-
-		rl.DrawRectangle(0, windowHeight - 25, windowWidth, 25, rl.NewColor(0, 0, 0, 100))
-		rl.DrawTextEx(font, fmt.Sprintf("SCALE: %g\tOFFSET-X: %g\tOFFSET-Y: %g", camera.Scale, camera.OffsetX, camera.OffsetY), rl.Vector2{X: 5, Y: windowHeight - 18}, 16, 0, rl.White)
+		renderGui()
 
 		rl.EndDrawing()
 	}
