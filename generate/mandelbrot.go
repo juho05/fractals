@@ -7,10 +7,10 @@ import (
 func NewMandelbrotGenerator(width, height int) *Generator {
 	g := newGenerator(width, height)
 
-	g.calculatePixel = func(camera Camera, x, y int) int {
+	g.calculatePixel = func(x, y int) int {
 		iteration := 0
 
-		c := g.complexNumberFromPixel(camera, x, y)
+		c := g.complexNumberFromPixel(x, y)
 		z := complex(0, 0)
 		zsquared := z * z
 

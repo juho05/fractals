@@ -1,17 +1,21 @@
 package generate
 
 import (
+	"sync"
 	"time"
 
 	"github.com/Bananenpro/fractals"
 	"github.com/google/uuid"
 )
 
-type chunk []fractals.Point
+type chunk struct {
+	point []fractals.Point
+	y     int
+}
 
-type calculatePixelFunc func(camera Camera, x, y int) int
+type calculatePixelFunc func(x, y int) int
 
-type callbackFunc func(points []fractals.Point, camera Camera, maxIterations int, time int64)
+type callbackFunc func(point [][]fractals.Point, camera Camera, maxIterations int, time int64)
 
 const increaseIterationsThreshold = 0.93
 const maxIterationsStep = 50
@@ -19,13 +23,18 @@ const maxIterationsStep = 50
 type Generator struct {
 	camera         Camera
 	previousCamera Camera
-	width          int
-	height         int
-	maxIterations  int
+	cameraLock     sync.RWMutex
+	deltaX         int
+	deltaY         int
+
+	width                 int
+	height                int
+	maxIterations         int
+	previousMaxIterations int
 
 	calculatePixel calculatePixelFunc
 
-	points []fractals.Point
+	points [][]fractals.Point // y x
 
 	callbacks map[uuid.UUID]callbackFunc
 
@@ -43,11 +52,12 @@ func newGenerator(width, height int) *Generator {
 		previousCamera: Camera{
 			Scale: 1,
 		},
-		width:          width,
-		height:         height,
-		maxIterations:  100,
-		callbacks:      make(map[uuid.UUID]callbackFunc),
-		regenerateChan: make(chan bool, 1),
+		width:                 width,
+		height:                height,
+		maxIterations:         100,
+		previousMaxIterations: 100,
+		callbacks:             make(map[uuid.UUID]callbackFunc),
+		regenerateChan:        make(chan bool, 3),
 	}
 }
 
@@ -55,8 +65,15 @@ func (g *Generator) Start(loop bool) {
 	g.running = true
 	go func() {
 		for loop && g.running {
+			g.cameraLock.RLock()
 			g.generate()
-			g.updateMaxIterations()
+			g.previousMaxIterations = g.maxIterations
+			if g.camera.Scale != g.previousCamera.Scale {
+				g.updateMaxIterations()
+			}
+			g.cameraLock.RUnlock()
+			g.deltaX = 0
+			g.deltaY = 0
 
 			if !<-g.regenerateChan {
 				return
@@ -86,12 +103,12 @@ func (g *Generator) RemoveCallback(id uuid.UUID) {
 }
 
 func (g *Generator) updateMaxIterations() {
-	previous := g.maxIterations
-
 	pixelsAboveIncreaseIterationsThreshold := 0
-	for _, p := range g.points {
-		if float64(p.Iterations) > float64(g.maxIterations)*increaseIterationsThreshold && p.Iterations < g.maxIterations {
-			pixelsAboveIncreaseIterationsThreshold++
+	for i := range g.points {
+		for _, p := range g.points[i] {
+			if float64(p.Iterations) > float64(g.maxIterations)*increaseIterationsThreshold && p.Iterations < g.maxIterations {
+				pixelsAboveIncreaseIterationsThreshold++
+			}
 		}
 	}
 
@@ -105,7 +122,7 @@ func (g *Generator) updateMaxIterations() {
 		g.maxIterations = 100
 	}
 
-	if g.maxIterations != previous {
+	if g.maxIterations != g.previousMaxIterations {
 		select {
 		case g.regenerateChan <- true:
 			return
@@ -119,43 +136,58 @@ func (g *Generator) generate() {
 	startTime := time.Now()
 	channel := make(chan chunk, g.height)
 
-	camera := g.camera
-
 	for y := 0; y < g.height; y++ {
-		go g.generateChunk(camera, 0, y, g.width, y+1, channel)
+		go g.generateChunk(y, channel)
 	}
 
-	points := make([]fractals.Point, 0, g.width*g.height)
+	points := make([][]fractals.Point, g.height)
+	for i := 0; i < g.height; i++ {
+		points[i] = make([]fractals.Point, g.width)
+	}
+
+	chunks := make([]chunk, g.height)
 
 	for i := 0; i < g.height; i++ {
 		chunk := <-channel
-		points = append(points, chunk...)
+		points[chunk.y] = chunk.point
+		chunks[chunk.y] = chunk
+	}
+
+	for _, cb := range g.callbacks {
+		cb(points, g.camera, g.maxIterations, time.Since(startTime).Milliseconds())
 	}
 
 	g.points = points
+}
 
-	deltaTime := time.Since(startTime).Milliseconds()
+func (g *Generator) generateChunk(y int, channel chan<- chunk) {
+	points := make([]fractals.Point, 0, g.width)
+	for x := 0; x < g.width; x++ {
+		points = append(points, fractals.Point{
+			X:          x,
+			Y:          y,
+			Iterations: g.generatePixel(x, y),
+		})
+	}
 
-	for _, cb := range g.callbacks {
-		cb(points, g.camera, g.maxIterations, deltaTime)
+	channel <- chunk{
+		point: points,
+		y:     y,
 	}
 }
 
-func (g *Generator) generateChunk(camera Camera, fromX, fromY, toX, toY int, channel chan<- chunk) {
-	points := make(chunk, 0, (toX-fromX)*(toY-fromY))
-	for x := fromX; x < toX; x++ {
-		for y := fromY; y < toY; y++ {
-			points = append(points, fractals.Point{
-				X:          x,
-				Y:          y,
-				Iterations: g.calculatePixel(camera, x, y),
-			})
+func (g *Generator) generatePixel(x, y int) int {
+	if g.camera.Scale == g.previousCamera.Scale && g.maxIterations == g.previousMaxIterations {
+		if len(g.points) > 0 {
+			if x-g.deltaX >= 0 && y-g.deltaY >= 0 && x-g.deltaX < g.width && y-g.deltaY < g.height {
+				return g.points[y-g.deltaY][x-g.deltaX].Iterations
+			}
 		}
 	}
 
-	channel <- points
+	return g.calculatePixel(x, y)
 }
 
-func (g *Generator) complexNumberFromPixel(camera Camera, x, y int) complex128 {
-	return complex(camera.OffsetX+(float64(x)/float64(g.width)-0.5)*camera.Scale*4, camera.OffsetY+(float64(y)/float64(g.height)-0.5)*camera.Scale*4)
+func (g *Generator) complexNumberFromPixel(x, y int) complex128 {
+	return complex(g.camera.OffsetX+(float64(x)/float64(g.width)-0.5)*g.camera.Scale*4, g.camera.OffsetY+(float64(y)/float64(g.height)-0.5)*g.camera.Scale*4)
 }

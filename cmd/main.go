@@ -10,11 +10,11 @@ import (
 
 const windowWidth = 800
 const windowHeight = 800
-const zoomSpeed = 0.08
+const zoomSpeed = 0.1
 
 var generator *generate.Generator
 
-var points = make([]fractals.Point, windowWidth*windowHeight)
+var points = [][]fractals.Point{}
 var pointsLock = sync.RWMutex{}
 
 var camera generate.Camera
@@ -36,14 +36,16 @@ func processInput() {
 	}
 }
 
-func generatorCallback(pointsData []fractals.Point, usedCamera generate.Camera, usedMaxIterations int, time int64) {
+func generatorCallback(pointsData [][]fractals.Point, usedCamera generate.Camera, usedMaxIterations int, time int64) {
 	pointsLock.Lock()
 	points = pointsData
 	pointsLock.Unlock()
 
 	camera = usedCamera
 	maxIterations = usedMaxIterations
-	deltaTime = time
+	if time > 15 {
+		deltaTime = time
+	}
 }
 
 func main() {
@@ -65,8 +67,10 @@ func main() {
 		rl.ClearBackground(rl.Black)
 
 		pointsLock.RLock()
-		for _, p := range points {
-			rl.DrawPixel(int32(p.X), int32(p.Y), fractals.BernsteinPolynomials(p.Iterations, maxIterations))
+		for i := range points {
+			for _, p := range points[i] {
+				rl.DrawPixel(int32(p.X), int32(p.Y), fractals.BernsteinPolynomials(p.Iterations, maxIterations))
+			}
 		}
 		pointsLock.RUnlock()
 

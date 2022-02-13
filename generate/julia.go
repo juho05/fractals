@@ -7,10 +7,10 @@ import (
 func NewJuliaGenerator(c complex128, width, height int) *Generator {
 	g := newGenerator(width, height)
 
-	g.calculatePixel = func(camera Camera, x, y int) int {
+	g.calculatePixel = func(x, y int) int {
 		iteration := 0
 
-		z := g.complexNumberFromPixel(camera, x, y)
+		z := g.complexNumberFromPixel(x, y)
 		zsquared := z * z
 
 		for cmplx.Abs(zsquared) <= 4 && iteration < g.maxIterations {

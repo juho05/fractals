@@ -24,8 +24,10 @@ func constructImage() image.Image {
 	pointsLock.RLock()
 
 	img := image.NewRGBA(image.Rect(0, 0, windowWidth, windowHeight))
-	for _, p := range points {
-		img.Set(p.X, p.Y, fractals.BernsteinPolynomials(p.Iterations, maxIterations))
+	for i := range points {
+		for _, p := range points[i] {
+			img.Set(p.X, p.Y, fractals.BernsteinPolynomials(p.Iterations, maxIterations))
+		}
 	}
 
 	pointsLock.RUnlock()
