@@ -43,9 +43,7 @@ func generatorCallback(pointsData [][]fractals.Point, usedCamera generate.Camera
 
 	camera = usedCamera
 	maxIterations = usedMaxIterations
-	if time > 15 {
-		deltaTime = time
-	}
+	deltaTime = time
 }
 
 func main() {
