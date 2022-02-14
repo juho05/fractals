@@ -23,7 +23,7 @@ func saveImageToDisk(path string) error {
 func constructImage() image.Image {
 	pointsLock.RLock()
 
-	img := image.NewRGBA(image.Rect(0, 0, windowWidth, windowHeight))
+	img := image.NewRGBA(image.Rect(0, 0, len(points[0]), len(points)))
 	for i := range points {
 		for _, p := range points[i] {
 			img.Set(p.X, p.Y, fractals.BernsteinPolynomials(p.Iterations, maxIterations))

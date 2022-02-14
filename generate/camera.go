@@ -14,7 +14,12 @@ func (g *Generator) BeginMovement() {
 func (g *Generator) EndMovement() {
 	g.cameraLock.Unlock()
 	if g.camera != g.previousCamera {
-		g.regenerateChan <- true
+		select {
+		case g.regenerateChan <- true:
+			return
+		default:
+			return
+		}
 	}
 }
 
@@ -32,4 +37,14 @@ func (g *Generator) Move(dPixelX, dPixelY int) {
 
 	g.camera.OffsetX -= float64(dPixelX) * g.camera.Scale / float64(g.width/4)
 	g.camera.OffsetY -= float64(dPixelY) * g.camera.Scale / float64(g.height/4)
+}
+
+func (g *Generator) GetCamera() Camera {
+	return g.camera
+}
+
+func (g *Generator) SetCamera(camera Camera) {
+	g.BeginMovement()
+	g.camera = camera
+	g.EndMovement()
 }

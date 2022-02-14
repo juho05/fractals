@@ -8,8 +8,11 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-const windowWidth = 800
-const windowHeight = 800
+var (
+	windowWidth  = 800
+	windowHeight = 800
+)
+
 const zoomSpeed = 0.1
 
 var generator *generate.Generator
@@ -46,28 +49,63 @@ func generatorCallback(pointsData [][]fractals.Point, usedCamera generate.Camera
 	deltaTime = time
 }
 
+func newGenerator() *generate.Generator {
+	if windowWidth > windowHeight {
+		generator = generate.NewMandelbrotGenerator(windowHeight, windowHeight)
+	} else {
+		generator = generate.NewMandelbrotGenerator(windowWidth, windowWidth)
+	}
+
+	generator.AddCallback(generatorCallback)
+
+	return generator
+}
+
 func main() {
-	rl.SetConfigFlags(rl.FlagVsyncHint)
+	rl.SetConfigFlags(rl.FlagVsyncHint | rl.FlagWindowResizable)
 	rl.InitWindow(int32(windowWidth), int32(windowHeight), "Fractals")
 
 	loadAssets()
 
-	generator = generate.NewMandelbrotGenerator(windowWidth, windowHeight)
-	generator.AddCallback(generatorCallback)
-
+	generator := newGenerator()
 	generator.Start(true)
 
 	for !rl.WindowShouldClose() {
+		if rl.IsWindowResized() {
+			generator.Stop()
+			camera = generator.GetCamera()
+			maxIterations = generator.GetMaxIterations()
+			windowWidth = rl.GetScreenWidth()
+			windowHeight = rl.GetScreenHeight()
+			pointsLock.Lock()
+			points = [][]fractals.Point{}
+			pointsLock.Unlock()
+			generator = newGenerator()
+			generator.SetCamera(camera)
+			generator.SetMaxIterations(maxIterations)
+			generator.Start(true)
+		}
+
 		processInput()
 
 		rl.BeginDrawing()
 
-		rl.ClearBackground(rl.Black)
+		rl.ClearBackground(rl.NewColor(10, 10, 10, 255))
 
 		pointsLock.RLock()
 		for i := range points {
 			for _, p := range points[i] {
-				rl.DrawPixel(int32(p.X), int32(p.Y), fractals.BernsteinPolynomials(p.Iterations, maxIterations))
+				x := int32(p.X)
+				if windowWidth > windowHeight {
+					x += int32(windowWidth-windowHeight) / 2
+				}
+
+				y := int32(p.Y)
+				if windowHeight > windowWidth {
+					y += int32(windowHeight-windowWidth) / 2
+				}
+
+				rl.DrawPixel(x, y, fractals.BernsteinPolynomials(p.Iterations, maxIterations))
 			}
 		}
 		pointsLock.RUnlock()

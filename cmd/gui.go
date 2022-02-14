@@ -16,13 +16,13 @@ func loadAssets() {
 }
 
 func renderGui() {
-	rl.DrawRectangle(0, 0, windowWidth, 30, rl.NewColor(0, 0, 0, 100))
+	rl.DrawRectangle(0, 0, int32(windowWidth), 30, rl.NewColor(0, 0, 0, 100))
 	rl.DrawTextEx(font, fmt.Sprintf("NMAX: %d\tTIME: %dms", maxIterations, deltaTime), rl.Vector2{X: 5, Y: 7}, 16, 0, rl.White)
 
-	rl.DrawRectangle(0, windowHeight-25, windowWidth, 25, rl.NewColor(0, 0, 0, 100))
-	rl.DrawTextEx(font, fmt.Sprintf("SCALE: %g\tOFFSET-X: %g\tOFFSET-Y: %g", camera.Scale, camera.OffsetX, camera.OffsetY), rl.Vector2{X: 5, Y: windowHeight - 18}, 16, 0, rl.White)
+	rl.DrawRectangle(0, int32(windowHeight)-25, int32(windowWidth), 25, rl.NewColor(0, 0, 0, 100))
+	rl.DrawTextEx(font, fmt.Sprintf("SCALE: %g\tOFFSET-X: %g\tOFFSET-Y: %g", camera.Scale, camera.OffsetX, camera.OffsetY), rl.Vector2{X: 5, Y: float32(windowHeight) - 18}, 16, 0, rl.White)
 
-	if raygui.Button(rl.NewRectangle(windowWidth-55, 5, 50, 20), "SAVE") {
+	if raygui.Button(rl.NewRectangle(float32(windowWidth)-55, 5, 50, 20), "SAVE") {
 		save()
 	}
 }

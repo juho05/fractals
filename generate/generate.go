@@ -102,6 +102,15 @@ func (g *Generator) RemoveCallback(id uuid.UUID) {
 	delete(g.callbacks, id)
 }
 
+func (g *Generator) GetMaxIterations() int {
+	return g.maxIterations
+}
+
+func (g *Generator) SetMaxIterations(maxIterations int) {
+	g.previousMaxIterations = g.maxIterations
+	g.maxIterations = maxIterations
+}
+
 func (g *Generator) updateMaxIterations() {
 	pixelsAboveIncreaseIterationsThreshold := 0
 	for i := range g.points {
@@ -153,8 +162,10 @@ func (g *Generator) generate() {
 		chunks[chunk.y] = chunk
 	}
 
-	for _, cb := range g.callbacks {
-		cb(points, g.camera, g.maxIterations, time.Since(startTime).Milliseconds())
+	if g.running {
+		for _, cb := range g.callbacks {
+			cb(points, g.camera, g.maxIterations, time.Since(startTime).Milliseconds())
+		}
 	}
 
 	g.points = points
