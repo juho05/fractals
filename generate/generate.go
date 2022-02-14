@@ -9,8 +9,8 @@ import (
 )
 
 type chunk struct {
-	point []fractals.Point
-	y     int
+	points []fractals.Point
+	y      int
 }
 
 type calculatePixelFunc func(x, y int) int
@@ -33,6 +33,7 @@ type Generator struct {
 	previousMaxIterations int
 
 	calculatePixel calculatePixelFunc
+	symmetric      bool
 
 	points [][]fractals.Point // y x
 
@@ -145,21 +146,54 @@ func (g *Generator) generate() {
 	startTime := time.Now()
 	channel := make(chan chunk, g.height)
 
-	for y := 0; y < g.height; y++ {
-		go g.generateChunk(y, channel)
+	axisY := g.height
+	if g.symmetric && g.camera.Scale < 0.5 {
+		for y := 0; y < g.height; y++ {
+			if imag(g.complexNumberFromPixel(0, y)) > 0 {
+				axisY = y
+				break
+			}
+		}
+	}
+
+	goroutineCount := 0
+	if axisY >= g.height/2 {
+		for y := 0; y < axisY; y++ {
+			goroutineCount++
+			go g.generateChunk(y, channel)
+		}
+	} else {
+		for y := axisY; y < g.height; y++ {
+			goroutineCount++
+			go g.generateChunk(y, channel)
+		}
 	}
 
 	points := make([][]fractals.Point, g.height)
+
 	for i := 0; i < g.height; i++ {
 		points[i] = make([]fractals.Point, g.width)
 	}
 
-	chunks := make([]chunk, g.height)
-
-	for i := 0; i < g.height; i++ {
+	for i := 0; i < goroutineCount; i++ {
 		chunk := <-channel
-		points[chunk.y] = chunk.point
-		chunks[chunk.y] = chunk
+		points[chunk.y] = chunk.points
+	}
+
+	if axisY >= g.height/2 {
+		for y := axisY; y < g.height; y++ {
+			copy(points[y], points[axisY-(y-axisY)-1])
+			for x := 0; x < g.width; x++ {
+				points[y][x].Y = y
+			}
+		}
+	} else {
+		for y := 0; y < axisY; y++ {
+			copy(points[y], points[2*axisY-y+1])
+			for x := 0; x < g.width; x++ {
+				points[y][x].Y = y
+			}
+		}
 	}
 
 	if g.running {
@@ -182,8 +216,8 @@ func (g *Generator) generateChunk(y int, channel chan<- chunk) {
 	}
 
 	channel <- chunk{
-		point: points,
-		y:     y,
+		points: points,
+		y:      y,
 	}
 }
 

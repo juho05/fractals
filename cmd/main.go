@@ -50,11 +50,12 @@ func generatorCallback(pointsData [][]fractals.Point, usedCamera generate.Camera
 }
 
 func newGenerator() *generate.Generator {
+	size := windowWidth
 	if windowWidth > windowHeight {
-		generator = generate.NewMandelbrotGenerator(windowHeight, windowHeight)
-	} else {
-		generator = generate.NewMandelbrotGenerator(windowWidth, windowWidth)
+		size = windowHeight
 	}
+
+	generator = generate.NewMandelbrotGenerator(size, size)
 
 	generator.AddCallback(generatorCallback)
 

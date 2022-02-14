@@ -6,6 +6,7 @@ import (
 
 func NewMandelbrotGenerator(width, height int) *Generator {
 	g := newGenerator(width, height)
+	g.symmetric = true
 
 	g.calculatePixel = func(x, y int) int {
 		iteration := 0
