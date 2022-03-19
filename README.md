@@ -4,7 +4,7 @@
 ![Go version](https://img.shields.io/github/go-mod/go-version/Bananenpro/fractals)
 ![Stars](https://img.shields.io/github/stars/Bananenpro/fractals?style=social)
 
-An application written in Go to generate fractals like the [Mandelbrot set](https://en.wikipedia.org/wiki/Mandelbrot_set) and the [Julia set](https://en.wikipedia.org/wiki/Julia_set).
+An application to explore the [Mandelbrot set](https://en.wikipedia.org/wiki/Mandelbrot_set) and [Julia sets](https://en.wikipedia.org/wiki/Julia_set).
 
 ## Screenshots
 
